@@ -1,12 +1,14 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
 public class Board : MonoBehaviour {
 
+    // Prefab object to instantiate
     public GameObject cellPrefab;
+    // Reference to all cell objects on the board
     public List<GameObject> cells;
-
+    // Enumerator to determine size of board
     public enum Matrix
     {
         ThreeByThree,
@@ -15,10 +17,11 @@ public class Board : MonoBehaviour {
         SixBySix
     };
     public Matrix matrix;
-
+    // References to width and height of board
     public int width;
     public int height;
 
+    // On awake, set the size of the board
     void Awake()
     {
         switch(matrix.ToString())
@@ -46,6 +49,9 @@ public class Board : MonoBehaviour {
         };
     }
 
+    /// <summary>
+    /// Create the board, instantiating cells for each position of the board
+    /// </summary>
 	public void Create()
     {
         for (int i = 0; i < width; i++)

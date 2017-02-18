@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,16 +9,14 @@ public class Player : MonoBehaviour {
     public List<Card> deck;
     public List<Card> hand;
 
-    // Get Card data from web server
-    // Store card data in temp list
-    // Iterate list and store card data in instantiated object
+    /// <summary>
+    /// Gets total # of cards player has and instantiates each one with a Card class
+    /// </summary>
     public void GetAllCards()
     {
-        // Get total amount of cards per deck
-        // Cards per deck should be a fixed value (i.e. 10)
+        // 10 is used as an example for how many cards per deck
         for (int i = 0; i < 10; i++)
         {
-            // Photon scene instantiate
             GameObject card = Instantiate(cardPrefab, Vector3.zero, Quaternion.identity, transform) as GameObject;
             int id = Random.Range(0, 10);
             card.GetComponent<Card>().id = id;
@@ -36,6 +34,9 @@ public class Player : MonoBehaviour {
         Draw(3);
     }
 
+    /// <summary>
+    /// Shuffle the deck.
+    /// </summary>
     public void Shuffle()
     {
         for (int i = 0; i < deck.Count; i++)
@@ -47,6 +48,10 @@ public class Player : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// Draw x number of cards from deck.
+    /// </summary>
+    /// <param name="cardsToDraw"># of cards to draw from deck to be added to hand</param>
     public void Draw(int cardsToDraw)
     {
         for (int i = 0; i < cardsToDraw; i++)

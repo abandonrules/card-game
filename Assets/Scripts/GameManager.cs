@@ -1,11 +1,13 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour {
 
+    // Reference to Board class
     public Board board;
+    // Reference to both players in the game
     public List<GameObject> players;
 
     void Start()
@@ -35,6 +37,10 @@ public class GameManager : MonoBehaviour {
         board.GetComponent<RectTransform>().localPosition = new Vector2();
     }
 
+    /// <summary>
+    /// Store reference of both players.
+    /// Start initialization of each player.
+    /// </summary>
     void GetPlayers()
     {
         players.AddRange(GameObject.FindGameObjectsWithTag("Player"));
