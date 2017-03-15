@@ -7,51 +7,48 @@ public class GameManager : MonoBehaviour {
 
     // Reference to Board class
     public Board board;
+    // Reference to Deck class
+    public Deck deck;
     // Reference to both players in the game
-    public List<GameObject> players;
+    public List<Player> players;
+    // Reference to Canvas
+    public Canvas canvas;
 
     void Start()
     {
-        board.Create();
-        CenterCamera();
-        GetPlayers();
+        StartCoroutine(Initialize());
     }
 
-    // Camera is centered depending if board size is even/odd
-    /*void CenterCamera()
+    void Update()
     {
-        if (board.width % 2 == 0)
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            Camera.main.transform.localPosition = new Vector3((board.width - 1) / 2f, (board.height - 1) / 2f, Camera.main.transform.localPosition.z);
-        }
-        else
-        {
-            Camera.main.transform.localPosition = new Vector3(Mathf.FloorToInt(board.width / 2), Mathf.FloorToInt(board.height / 2), Camera.main.transform.localPosition.z);
+            StartCoroutine(players[1].Draw(1));
         }
     }
-    */
 
-    void CenterCamera()
+    IEnumerator Initialize()
     {
-        // -50, -75, -100
-        board.GetComponent<RectTransform>().localPosition = new Vector2();
+        StartCoroutine(board.Create());
+        yield return StartCoroutine(deck.Create());
+        StartCoroutine(GetPlayers());
     }
 
     /// <summary>
     /// Store reference of both players.
     /// Start initialization of each player.
     /// </summary>
-    void GetPlayers()
+    IEnumerator GetPlayers()
     {
-        players.AddRange(GameObject.FindGameObjectsWithTag("Player"));
+        players.AddRange(FindObjectsOfType<Player>());
 
-        // Test code. Set name when players join room
-        players[0].name = "Player 1";
-        players[1].name = "Player 2";
-
-        foreach(GameObject player in players)
+        // FIX: Player data should be loaded during sign-in
+        for (int i = players.Count - 1; i >= 0; i--)
         {
-            player.GetComponent<Player>().GetAllCards();
+            players[i].deck = deck;
+            yield return StartCoroutine(players[i].Initialize());
+            yield return StartCoroutine(players[i].Draw(5));
+            //StartCoroutine(player.GetPlayerData("http://byroncustodio.com/unity/card-game/card.php?request=PLAYER&id=" + player.id));
         }
     }
 }
