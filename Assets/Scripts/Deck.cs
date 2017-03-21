@@ -6,6 +6,7 @@ using System.Collections.Generic;
 public class Deck : MonoBehaviour {
 
     const int totalTiles = 80;
+    public GameManager gameManager;
     public GameObject cardPrefab;
     public List<Card> cardList;
     public int currentCardIndex;
@@ -40,7 +41,10 @@ public class Deck : MonoBehaviour {
             {
                 child.GetComponent<Text>().color = Color.clear;
                 card.GetComponent<Card>().attackUI.Add(child.GetComponent<Text>());
+                card.GetComponent<Card>().SetAttackUI(child, child.name);
             }
+
+            card.GetComponent<Card>().board = gameManager.board;
         }
         SetText(cardList.Count);
 

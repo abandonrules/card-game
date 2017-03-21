@@ -11,9 +11,11 @@ public class Player : MonoBehaviour {
     //public List<Card> deck;
     public Deck deck;
     public List<Card> hand;
+    public Card selectedCard;
     //public GameObject cardPrefab;
     //public GameObject deckParent;
     public GameObject handParent;
+    public GameManager gameManager;
 
     /************
     /// <summary>
@@ -136,9 +138,10 @@ public class Player : MonoBehaviour {
         {
             // Get +/- value based on player position
             float sign = Mathf.Sign(transform.localPosition.x) * -1;
-            float newX = sign * 150;
-            float newY = 600f;
-            float newRotateZ = sign * 22.5f;
+            float newX = sign * 100;
+            //float newX = sign * 200;
+            float newY = 300f;
+            //float newRotateZ = sign * 22.5f;
 
             int endDeckIndex = deck.currentCardIndex + cardsToDraw;
             int handIndex = 0;
@@ -169,60 +172,70 @@ public class Player : MonoBehaviour {
 
                 hand[handIndex].transform.localPosition = centeredPos;
                 hand[handIndex].transform.localScale = new Vector2(1, 1);
-
-                hand[handIndex].GetComponent<RectTransform>().sizeDelta = new Vector2(200, 200);
                 hand[handIndex].GetComponent<Image>().color = Color.white;
 
                 hand[handIndex].ShowAttackUI();
 
                 deck.cardList[currentDeckIndex] = null;
 
+                /*
                 LeanTween.moveLocal(hand[handIndex].gameObject, Vector2.zero, 0.15f)
                     .setEase(LeanTweenType.easeInQuad);
-
+                */
+                /*
+                LeanTween.value(hand[handIndex].gameObject, hand[handIndex].transform.localPosition, Vector3.zero, 0.05f)
+                    .setEase(LeanTweenType.easeInQuad)
+                    .setOnUpdateVector3((Vector3 val) =>
+                    {
+                        hand[handIndex].GetComponent<RectTransform>().anchoredPosition = val;
+                    });
+                */
                 deck.UpdateTotalCards();
-                yield return new WaitForSeconds(0.15f);
 
                 if (handIndex == 0)
                 {
-                    newX = sign * 150;
-                    newY = 600f;
-                    newRotateZ = sign * 22.5f;
+                    //newX = sign * 150;
+                    newY = 300f;
+                    //newRotateZ = sign * 22.5f;
                 }
                 else if (handIndex == 1)
                 {
-                    newX = sign * 250;
-                    newY = 300f;
-                    newRotateZ = sign * 11.25f;
+                    //newX = sign * 250;
+                    newY = 150f;
+                    //newRotateZ = sign * 11.25f;
                 }
                 else if (handIndex == 2)
                 {
-                    newX = sign * 275;
+                    //newX = sign * 100;
                     newY = 0;
-                    newRotateZ = 0;
+                    //newRotateZ = 0;
                 }
                 else if (handIndex == 3)
                 {
-                    newX = sign * 250;
-                    newY = -300f;
-                    newRotateZ = sign * -11.25f;
+                    //newX = sign * 250;
+                    newY = -150f;
+                    //newRotateZ = sign * -11.25f;
                 }
                 else if (handIndex == 4)
                 {
-                    newX = sign * 150;
-                    newY = -600f;
-                    newRotateZ = sign * -22.5f;
+                    //newX = sign * 150;
+                    newY = -300f;
+                    //newRotateZ = sign * -22.5f;
                 }
 
-                LeanTween.moveLocal(hand[handIndex].gameObject, new Vector2(newX, newY), 0.2f)
-                    .setEase(LeanTweenType.easeInQuad);
-                LeanTween.value(hand[handIndex].gameObject, Vector3.zero, new Vector3(0, 0, newRotateZ), 0.2f)
+                LeanTween.value(hand[handIndex].gameObject, hand[handIndex].transform.localPosition, new Vector3(newX, newY, 0), 0.15f)
+                    .setEase(LeanTweenType.easeInQuad)
+                    .setOnUpdateVector3((Vector3 val) =>
+                    {
+                        hand[handIndex].GetComponent<RectTransform>().anchoredPosition = val;
+                    });
+                /*LeanTween.value(hand[handIndex].gameObject, Vector3.zero, new Vector3(0, 0, newRotateZ), 0.075f)
                     .setOnUpdateVector3((Vector3 val) =>
                     {
                         hand[handIndex].transform.localEulerAngles = val;
                     });
-
-                yield return new WaitForSeconds(0.2f);
+                    */
+                yield return new WaitForSeconds(0.15f);
                 handIndex++;
             }
         }
@@ -249,5 +262,33 @@ public class Player : MonoBehaviour {
         {
             return false;
         }
+    }
+
+    public void SelectCard(Card card)
+    {
+        if (selectedCard == null)
+        {
+            card.board.AddCoverListener(this);
+            selectedCard = card;
+            card.Select();
+        }
+        else if (card != selectedCard)
+        {
+            selectedCard.UndoSelect();
+            selectedCard = card;
+            selectedCard.Select();
+        }
+        else if (card == selectedCard)
+        {
+            selectedCard.UndoSelect();
+            selectedCard = null;
+        }
+    }
+
+    public void UndoSelectCard()
+    {
+        selectedCard.UndoSelect();
+        selectedCard.board.RemoveCoverListener();
+        selectedCard = null;
     }
 }

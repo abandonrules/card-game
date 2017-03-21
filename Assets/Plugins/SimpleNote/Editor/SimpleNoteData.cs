@@ -11,12 +11,12 @@ namespace DI.SimpleNote {
 	public class SimpleNoteData : ScriptableObject {
 
 		public static SimpleNoteData Instance { get { return _instance ? _instance : CreateInstance(); } }
-		public static string filePath = "Assets/SimpleNote/Resources/SimpleNoteData.asset";
+		public static string filePath = "Assets/Plugins/SimpleNote/Resources/SimpleNoteData.asset";
 		static SimpleNoteData _instance = null;
 		static SimpleNoteData CreateInstance() {
 #if UNITY_EDITOR
-			if (!AssetDatabase.IsValidFolder("Assets/SimpleNote/Resources"))
-				AssetDatabase.CreateFolder("Assets/SimpleNote", "Resources");
+			if (!AssetDatabase.IsValidFolder("Assets/Plugins/SimpleNote/Resources"))
+				AssetDatabase.CreateFolder("Assets/Plugins/SimpleNote", "Resources");
 			_instance = AssetDatabase.LoadAssetAtPath(filePath, typeof(SimpleNoteData)) as SimpleNoteData;
 			if (_instance == null)
 			{
