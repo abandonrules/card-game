@@ -1,12 +1,11 @@
 # Card Game
----
 A multiplayer strategy game inspired by Final Fantasy's Triple Triad mini-game and the classic board game, Reversi.
 
 ## Development Log
----
-**March 21st, 2017**
+**March 21st, 2017**  
 ![](https://thumbs.gfycat.com/JovialFarGardensnake-size_restricted.gif)
 ![](https://thumbs.gfycat.com/SoggyQueasyDungbeetle-size_restricted.gif)
+
 - *Programming*
     - +Introduced two various implementations of a player turn
     - +Mobile testing done through XCode (iPad)
