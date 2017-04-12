@@ -10,7 +10,7 @@ A multiplayer strategy game inspired by Final Fantasy's Triple Triad mini-game a
     - +Networking framework implemented using PUN
     - +Added new scene to test matchmaking system
         - Players are matched randomly
-    - + Added turn system to determine current turn number, remaining time in turn, current player's turn synchronized between players
+    - +Added turn system to determine current turn number, remaining time in turn, current player's turn synchronized between players
     - +Initial setup of game has been changed to fit network framework (spawning 2 players, dealing of cards, synchronized card info, etc.)
 - *Discussion*
     - Should a turn be ended manually after 1) Placing a card? or 2) Pressing a button?
