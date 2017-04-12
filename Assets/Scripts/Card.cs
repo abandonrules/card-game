@@ -4,7 +4,7 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
-public class Card : MonoBehaviour {
+public class Card : Photon.MonoBehaviour {
 
     // Reference of card's in-game id
     public int id;
@@ -26,7 +26,7 @@ public class Card : MonoBehaviour {
     // Reference of old card transform
     private Vector2 movedPosition;
     private Vector2 movedSize;
-
+        
     public void SetAttackUI(Transform child, string direction)
     {
         child.GetComponent<Text>().text = attack[direction.ToLower()].ToString();
@@ -85,19 +85,8 @@ public class Card : MonoBehaviour {
 
     public void Select()
     {
-        if (owner.name != "Board" && owner.name != "Deck")
+        if (owner.tag == "Player")
         {
-            // Player Cycle #1
-            /*
-            float sign = Mathf.Sign(transform.localPosition.x);
-            float targetX = transform.localPosition.x + (50f * sign);
-            LeanTween.moveLocalX(gameObject, targetX, 0.1f)
-                .setEase(LeanTweenType.easeInQuad);
-            
-            owner.GetComponent<Player>().selectedCard = this;
-            board.ShowValidCells();
-            */
-
             // Player Cycle #2
             //board.ShowCover();
             Debug.Log("Select: " + name);
@@ -143,30 +132,11 @@ public class Card : MonoBehaviour {
         attackUI[3].GetComponent<RectTransform>().sizeDelta = new Vector2(val.x, val.y / 3);
     }
 
-    public void UndoSelect()
+    public void UndoPlayerSelect()
     {
         //board.HideCover();
         Debug.Log("Deselect: " + name);
 
-        /*
-        LeanTween.delayedCall(gameObject, 0.01f, () =>
-        {
-            // Player Cycle #1
-            float sign = Mathf.Sign(transform.localPosition.x);
-            float targetX = transform.localPosition.x - (50f * sign);
-            oldCard = owner.GetComponent<Player>().selectedCard;
-
-            if (oldCard == owner.GetComponent<Player>().selectedCard || owner.GetComponent<Player>().selectedCard != null)
-            {
-                LeanTween.moveLocalX(gameObject, targetX, 0.1f)
-                    .setEase(LeanTweenType.easeOutQuad);
-                owner.GetComponent<Player>().selectedCard = null;
-                board.HideValidCells();
-            }
-        });
-        */
-
-        // Player Cycle #2
         owner.GetComponent<Player>().gameManager.HideCardControls();
         Vector2 targetPos = movedPosition;
         movedPosition = Vector2.zero;
@@ -202,7 +172,7 @@ public class Card : MonoBehaviour {
                ResizeText(val); 
             });
         board.HideValidCells();
-        StartCoroutine(owner.GetComponent<Player>().Draw(1));
+        owner.GetComponent<Player>().photonView.RPC("Draw", PhotonTargets.AllViaServer, 1);
         SetOwner(board.transform);
     }
 

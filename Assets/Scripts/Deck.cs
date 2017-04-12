@@ -2,93 +2,91 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using Hashtable = ExitGames.Client.Photon.Hashtable;
 
 public class Deck : MonoBehaviour {
 
-    const int totalTiles = 80;
+    public static readonly int MAX_TILES = 80;
+
+    public int Total
+    {
+        get
+        {
+            return PhotonNetwork.room.GetDeckTotal();
+        }
+    }
+
+    public string DeckAttack
+    {
+        get
+        {
+            return PhotonNetwork.room.GetDeckAttack();
+        }
+    }
+
+    public string PlayerInteracting
+    {
+        get
+        {
+            return PhotonNetwork.room.GetDeckInteract();
+        }
+    }
+
+    public bool IsAllPlayersReady
+    {
+        get
+        {
+            return PhotonNetwork.room.GetInitialPlayerStatus();
+        }
+    }
+
     public GameManager gameManager;
     public GameObject cardPrefab;
     public List<Card> cardList;
-    public int currentCardIndex;
 
-    public List<string> tempAttack;
-    private int defaultTop = 1;
-    private int defaultRight = 1;
-    private int defaultBottom = 1;
-    private int defaultLeft = 1;
-
-    public IEnumerator Create()
+    public static void AssignCardValues()
     {
-        yield return StartCoroutine(AssignValues());
+        List<string> tempAttack = new List<string>();
+        int attackTop = 1;
+        int attackRight = 1;
+        int attackBottom = 1;
+        int attackLeft = 1;
 
-        for (int i = 0; i < totalTiles; i++)
-        {
-            GameObject card = Instantiate(cardPrefab, Vector2.zero, Quaternion.identity, transform) as GameObject;
-            card.transform.localPosition = Vector2.zero;
-            card.name = i.ToString();
-
-            card.GetComponent<Card>().id = i;
-            card.GetComponent<Card>().SetOwner(transform);
-
-            string[] randAttack = tempAttack[i].Split(","[0]);
-            card.GetComponent<Card>().attack["top"] = int.Parse(randAttack[0]);
-            card.GetComponent<Card>().attack["right"] = int.Parse(randAttack[1]);
-            card.GetComponent<Card>().attack["bottom"] = int.Parse(randAttack[2]);
-            card.GetComponent<Card>().attack["left"] = int.Parse(randAttack[3]);
-            
-            cardList.Add(card.GetComponent<Card>());
-            foreach(Transform child in card.transform)
-            {
-                child.GetComponent<Text>().color = Color.clear;
-                card.GetComponent<Card>().attackUI.Add(child.GetComponent<Text>());
-                card.GetComponent<Card>().SetAttackUI(child, child.name);
-            }
-
-            card.GetComponent<Card>().board = gameManager.board;
-        }
-        SetText(cardList.Count);
-
-        yield return null;
-    }
-
-    IEnumerator AssignValues()
-    {
         for (int i = 1; i < 500; i++)
         {
-            tempAttack.Add(defaultTop.ToString() + "," + defaultRight.ToString() + "," + defaultBottom.ToString() + "," + defaultLeft.ToString());
+            tempAttack.Add(attackTop.ToString() + "," + attackRight.ToString() + "," + attackBottom.ToString() + "," + attackLeft.ToString());
 
-            if (defaultRight == 5 && defaultBottom == 5 && defaultLeft == 5)
+            if (attackRight == 5 && attackBottom == 5 && attackLeft == 5)
             {
-                defaultTop++;
-                defaultRight = 1;
-                defaultBottom = 1;
-                defaultLeft = 1;
+                attackTop++;
+                attackRight = 1;
+                attackBottom = 1;
+                attackLeft = 1;
                 continue;
             }
-            else if (defaultBottom == 5 && defaultLeft == 5)
+            else if (attackBottom == 5 && attackLeft == 5)
             {
-                defaultRight++;
-                defaultBottom = 1;
-                defaultLeft = 1;
+                attackRight++;
+                attackBottom = 1;
+                attackLeft = 1;
                 continue;
             }
-            else if (defaultLeft == 5)
+            else if (attackLeft == 5)
             {
-                defaultBottom++;
-                defaultLeft = 1;
+                attackBottom++;
+                attackLeft = 1;
                 continue;
             }
             else
             {
-                defaultLeft++;
+                attackLeft++;
             }
         }
 
-        yield return StartCoroutine(ShuffleTemp());
-        yield return null;
+        ShuffleTemp(tempAttack);
     }
 
-    public IEnumerator ShuffleTemp()
+    static void ShuffleTemp(List<string> tempAttack)
     {
         for (int i = 0; i < tempAttack.Count; i++)
         {
@@ -97,47 +95,223 @@ public class Deck : MonoBehaviour {
             tempAttack[randomIndex] = tempAttack[i];
             tempAttack[i] = newIndex;
         }
-        yield return null;
-    }
 
-    public int UpdateTotalCards()
-    {
-        int totalCards = int.Parse(GetComponent<Text>().text.Substring(6));
-        totalCards--;
-        currentCardIndex++;
-        SetText(totalCards);
-        return totalCards;
-    }
+        string serializedAttack = "";
 
-    public int GetTotalCards()
-    {
-        int totalCards = 0;
-
-        for (int i = 0; i < cardList.Count; i++)
+        // Only 80/500 randomized attacks are sent to server
+        for (int i = 0; i < MAX_TILES; i++)
         {
-            if (cardList[i] != null)
+            serializedAttack += tempAttack[i] + "|";
+        }
+        PhotonNetwork.room.SetDeckAttack(serializedAttack);
+    }
+
+    public void Create()
+    {
+        string[] attackList = this.DeckAttack.Split("|"[0]);
+        for (int i = 0; i < MAX_TILES; i++)
+        {
+            GameObject cardGO = Instantiate(cardPrefab, Vector3.zero, Quaternion.identity, transform) as GameObject;
+            Card card = cardGO.GetComponent<Card>();
+            card.name = i.ToString();
+
+            string[] randAttack = attackList[i].Split(","[0]);
+            card.attack["top"] = int.Parse(randAttack[0]);
+            card.attack["right"] = int.Parse(randAttack[1]);
+            card.attack["bottom"] = int.Parse(randAttack[2]);
+            card.attack["left"] = int.Parse(randAttack[3]);
+
+            cardList.Add(card);
+
+            foreach(Transform child in card.transform)
             {
-                totalCards++;
+                child.GetComponent<Text>().color = Color.clear;
+                card.attackUI.Add(child.GetComponent<Text>());
+                card.SetAttackUI(child, child.name);
+            }
+
+            card.board = FindObjectOfType<Board>();
+            card.SetOwner(transform);
+        }
+
+        Debug.Log("Spawned playing cards...");
+
+        if (PhotonNetwork.isMasterClient)
+        {
+            PhotonNetwork.room.SetDeckTotal(cardList.Count);
+            gameManager.photonView.RPC("DealInitialCards", PhotonTargets.MasterClient, null);
+        }
+    }
+
+    public void OnPhotonCustomRoomPropertiesChanged(Hashtable propertiesThatChanged)
+    {
+        if (propertiesThatChanged.ContainsKey("DeckTotal"))
+        {
+            GetComponent<Text>().text = "Deck: " + this.Total;
+            Debug.Log("Deck Count: " + this.Total);
+        }
+
+        if (propertiesThatChanged.ContainsKey("DeckAttack"))
+        {
+            Debug.Log("Creating deck...");
+            Create();
+        }
+
+        if (propertiesThatChanged.ContainsKey("DeckInteract"))
+        {
+            // Player is done interacting
+            if (propertiesThatChanged["DeckInteract"].Equals(""))
+            {
+                Debug.Log("Deck is free.");
             }
             else
             {
-                currentCardIndex++;
+                Debug.Log(propertiesThatChanged["DeckInteract"].ToString() + " using deck.");
             }
         }
-        SetText(totalCards);
-
-        return totalCards;
     }
+}
 
-    void SetText(int value)
+public static class DeckExtensions {
+
+    public static readonly string DeckTotalKey = "DeckTotal";
+
+    public static readonly string DeckAttackKey = "DeckAttack";
+
+    public static readonly string DeckInteractKey = "DeckInteract";
+
+    public static readonly string PlayerReadyKey = "PlayerReady";
+
+    public static void SetDeckTotal(this Room room, int amount)
     {
-        int oldValue = int.Parse(GetComponent<Text>().text.Substring(6));
+        if (room == null)
+        {
+            Debug.LogError("Check if client is in room or is connected.");
+            Debug.Break();
+        }
 
-        LeanTween.value(oldValue, value, 0.1f)
-            .setEase(LeanTweenType.easeInQuad)
-            .setOnUpdate((float val) =>
-            {
-                GetComponent<Text>().text = "Deck: " + Mathf.RoundToInt(val).ToString();
-            });
+        Hashtable roomProps = new Hashtable();
+        roomProps.Add(DeckTotalKey, amount);
+        room.SetCustomProperties(roomProps);
     }
+
+    public static int GetDeckTotal(this RoomInfo room)
+    {
+        object total;
+
+        if (room.CustomProperties.TryGetValue(DeckTotalKey, out total))
+        {
+            return (int)total;
+        }
+
+        return 0;
+    }
+
+    public static void SetDeckAttack(this Room room, string deckAttack)
+    {
+        if (room == null)
+        {
+            Debug.LogError("Check if client is in room or is connected.");
+            Debug.Break();
+        }
+
+        Hashtable roomProps = new Hashtable();
+        roomProps.Add(DeckAttackKey, deckAttack);
+        room.SetCustomProperties(roomProps);
+    }
+
+    public static string GetDeckAttack(this RoomInfo room)
+    {
+        object attack;
+
+        if (room.CustomProperties.TryGetValue(DeckAttackKey, out attack))
+        {
+            return attack.ToString();
+        }
+
+        return null;
+    }
+
+    public static void SetDeckInteract(this Room room, PhotonPlayer player = null)
+    {
+        if (room == null)
+        {
+            Debug.LogError("Check if client is in room or is connected.");
+            Debug.Break();
+        }
+
+        Hashtable roomProps = new Hashtable();
+        if (player != null)
+        {
+            roomProps.Add(DeckInteractKey, player.NickName);
+        }
+        else
+        {
+            roomProps.Add(DeckInteractKey, "");
+        }
+        room.SetCustomProperties(roomProps);
+    }
+
+    public static string GetDeckInteract(this RoomInfo room)
+    {
+        object player;
+
+        if (room.CustomProperties.TryGetValue(DeckInteractKey, out player))
+        {
+            return player.ToString();
+        }
+
+        return null;
+    }
+
+    public static void SetInitialPlayerStatus(this Room room, PhotonPlayer player = null)
+    {
+        if (room == null)
+        {
+            Debug.LogError("Check if client is in room or is connected.");
+            Debug.Break();
+        }
+
+        Hashtable roomProps = new Hashtable();
+        if (player == null)
+        {
+            Debug.LogError("SetInitialPlayerStatus() missing player parameter of type PhotonPlayer.");
+            Debug.Break();
+        }
+        else
+        {
+            object otherPlayer;
+
+            if (room.CustomProperties.TryGetValue(PlayerReadyKey, out otherPlayer))
+            {
+                string bothPlayers = otherPlayer.ToString() + "," + player.NickName;
+                roomProps.Add(PlayerReadyKey, bothPlayers);
+            }
+            else
+            {
+                roomProps.Add(PlayerReadyKey, player.NickName);
+            }
+
+        }
+        room.SetCustomProperties(roomProps);
+    }
+
+    public static bool GetInitialPlayerStatus(this RoomInfo room)
+    {
+        object players;
+
+        if (room.CustomProperties.TryGetValue(PlayerReadyKey, out players))
+        {
+            if (players.ToString().Contains(","))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        return false;
+    } 
 }

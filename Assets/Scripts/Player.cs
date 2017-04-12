@@ -1,262 +1,203 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
-public class Player : MonoBehaviour {
+public class Player : Photon.MonoBehaviour {
 
-    public string playerName;
-    // FIX: album and deck data are populated during sign-in
-    //public List<Card> album;
-    //public List<Card> deck;
-    public Deck deck;
+    public Deck deck
+    {
+        get
+        {
+            return FindObjectOfType<Deck>();
+        }
+    }
     public List<Card> hand;
     public Card selectedCard;
-    //public GameObject cardPrefab;
-    //public GameObject deckParent;
+
+    public bool isHandFull
+    {
+        get
+        {
+            return CheckHand();
+        }
+    }
+
     public GameObject handParent;
-    public GameManager gameManager;
-
-    /************
-    /// <summary>
-    /// Gets total # of cards player has and instantiates each one with a Card class
-    /// </summary>
-    public IEnumerator GetPlayerData(string url)
+    public GameManager gameManager
     {
-        deckParent = new GameObject();
-        deckParent.name = "Deck";
-        deckParent.AddComponent<RectTransform>();
-        deckParent.transform.SetParent(transform);
-        deckParent.transform.localPosition = Vector2.zero;
+        get
+        {
+            return FindObjectOfType<GameManager>();
+        }
+    }
+
+    void OnPhotonInstantiate(PhotonMessageInfo info)
+    {
+        info.sender.TagObject = this.gameObject;
+    }
+
+    public void Initialize()
+    {
+        GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+        transform.localScale = Vector2.one;
 
         handParent = new GameObject();
         handParent.name = "Hand";
         handParent.transform.SetParent(transform);
         handParent.AddComponent<RectTransform>();
-        handParent.transform.SetParent(transform);
         handParent.transform.localPosition = Vector2.zero;
-
-        WWW www = new WWW(url);
-        yield return www;
-
-        string[] playerData = www.text.Split("|"[0]);
-        name = playerData[1];
-
-        // Split to get individual card data
-        // id~name~sprite~attack~effect$
-        // 1~Apple~~1,2,3,4~$
-        string[] deckData = playerData[2].Split("$"[0]);
-        string[] albumData = playerData[3].Split("$"[0]);
-
-        StartCoroutine(PopulateDeck(deckData));
-        // PopulateAlbum with albumData
-
-        Shuffle();
-        Draw(5);
+        handParent.transform.localScale = Vector2.one;
     }
 
-    IEnumerator LoadImage(string url, Sprite cardSprite)
+    void Update()
     {
-        WWW www = new WWW(url);
-        yield return www;
-
-        cardSprite = Sprite.Create(www.texture, new Rect(0, 0, www.texture.width, www.texture.height), Vector2.zero);
-    }
-
-    IEnumerator PopulateDeck(string[] deckData)
-    {
-        for (int i = 0; i < deckData.Length; i++)
+        if (SceneManager.GetActiveScene().name == "Test_Gameplay")
         {
-            GameObject card = Instantiate(cardPrefab, Vector3.zero, Quaternion.identity, transform) as GameObject;
-            card.transform.SetParent(deckParent.transform);
-            card.transform.localPosition = Vector2.zero;
-
-            string[] cardData = deckData[i].Split("~"[0]);
-            card.GetComponent<Card>().id = int.Parse(cardData[0]);
-            card.name = cardData[1];
-
-            if (!string.IsNullOrEmpty(cardData[2]))
+            if (gameManager.turnManager.TimeEnd && photonView.isMine && gameManager.turnManager.CurrentPlayer == PhotonNetwork.player.NickName && selectedCard != null)
             {
-                yield return StartCoroutine(LoadImage(cardData[2], card.GetComponent<Card>().sprite));
-            }
-
-            string[] attackData = cardData[3].Split(","[0]);
-            card.GetComponent<Card>().attack.Add("top", int.Parse(attackData[0]));
-            card.GetComponent<Card>().attack.Add("right", int.Parse(attackData[1]));
-            card.GetComponent<Card>().attack.Add("bottom", int.Parse(attackData[2]));
-            card.GetComponent<Card>().attack.Add("left", int.Parse(attackData[3]));
-
-            deck.Add(card.GetComponent<Card>());
-
-            if (!string.IsNullOrEmpty(cardData[4]))
-            {
-                card.GetComponent<Card>().effect = cardData[4];
+                UndoSelectMove();
             }
         }
-    }
-
-    void PopulateAlbum(string cardData, GameObject card)
-    {
-
-    }
-
-
-    /// <summary>
-    /// Shuffle the deck.
-    /// </summary>
-    public void Shuffle()
-    {
-        for (int i = 0; i < deck.Count; i++)
-        {
-            int randomIndex = Random.Range(0, deck.Count);
-            Card newIndex = deck[randomIndex];
-            deck[randomIndex] = deck[i];
-            deck[i] = newIndex;
-        }
-    }
-    **************/
-
-    public IEnumerator Initialize()
-    {
-        handParent = new GameObject();
-        handParent.name = "Hand";
-        handParent.transform.SetParent(transform);
-        handParent.AddComponent<RectTransform>();
-        handParent.transform.SetParent(transform);
-        handParent.transform.localPosition = Vector2.zero;
-        handParent.transform.localScale = new Vector2(1, 1);
-        yield return null;
     }
 
     /// <summary>
     /// Draw x number of cards from deck.
     /// </summary>
     /// <param name="cardsToDraw"># of cards to draw from deck to be added to hand</param>
-    public IEnumerator Draw(int cardsToDraw)
+    [PunRPC]
+    public IEnumerator Draw(int cardsToDraw, PhotonMessageInfo info)
     {
-        if (!IsHandFull())
+        // local client
+        if (photonView.isMine)
         {
-            // Get +/- value based on player position
+            PhotonNetwork.room.SetDeckInteract(PhotonNetwork.player);
+
             float sign = Mathf.Sign(transform.localPosition.x) * -1;
             float newX = sign * 100;
-            //float newX = sign * 200;
             float newY = 300f;
-            //float newRotateZ = sign * 22.5f;
 
-            int endDeckIndex = deck.currentCardIndex + cardsToDraw;
-            int handIndex = 0;
-
-            for (int currentDeckIndex = deck.currentCardIndex; currentDeckIndex < endDeckIndex; currentDeckIndex++)
+            // have card method to move to player hand???
+            for (int i = 0; i < cardsToDraw; i++)
             {
+                // Initial draw
                 if (hand.Count < 5)
                 {
-                    hand.Add(deck.cardList[currentDeckIndex]);
+                    hand.Add(deck.cardList[0]);
                 }
                 else
                 {
-                    for (int i = 0; i < hand.Count; i++)
+                    // Recurring draws
+                    for (int j = 0; j < hand.Count; j++)
                     {
-                        if (hand[i] == null)
+                        if (hand[j] == null)
                         {
-                            hand[i] = deck.cardList[currentDeckIndex];
-                            handIndex = i;
+                            i = j;
+                            hand[j] = deck.cardList[0];
                             break;
                         }
                     }
                 }
-                hand[handIndex].transform.SetParent(handParent.transform);
-                hand[handIndex].SetOwner(transform);
-                hand[handIndex].transform.SetSiblingIndex(handIndex);
 
-                Vector2 centeredPos = new Vector2((-(transform.localPosition.x) + transform.GetComponent<RectTransform>().anchoredPosition.x) * 2, (deck.transform.localPosition.y * 2) - (deck.GetComponent<RectTransform>().sizeDelta.y / 2));
+                hand[i].transform.SetParent(handParent.transform);
+                hand[i].SetOwner(transform);
+                hand[i].transform.SetSiblingIndex(i);
 
-                hand[handIndex].transform.localPosition = centeredPos;
-                hand[handIndex].transform.localScale = new Vector2(1, 1);
-                hand[handIndex].GetComponent<Image>().color = Color.white;
+                Vector2 centeredPos = new Vector2((-(transform.localPosition.x) + transform.GetComponent<RectTransform>().anchoredPosition.x) * 2, 
+                                                    (deck.transform.localPosition.y * 2) - (deck.GetComponent<RectTransform>().sizeDelta.y / 2));
 
-                hand[handIndex].ShowAttackUI();
+                hand[i].transform.localPosition = centeredPos;
+                hand[i].transform.localScale = new Vector2(1, 1);
+                hand[i].GetComponent<Image>().color = Color.white;
+                hand[i].ShowAttackUI();
 
-                deck.cardList[currentDeckIndex] = null;
+                deck.cardList.RemoveAt(0);
+                PhotonNetwork.room.SetDeckTotal(deck.cardList.Count);
 
-                /*
-                LeanTween.moveLocal(hand[handIndex].gameObject, Vector2.zero, 0.15f)
-                    .setEase(LeanTweenType.easeInQuad);
-                */
-                /*
-                LeanTween.value(hand[handIndex].gameObject, hand[handIndex].transform.localPosition, Vector3.zero, 0.05f)
-                    .setEase(LeanTweenType.easeInQuad)
-                    .setOnUpdateVector3((Vector3 val) =>
-                    {
-                        hand[handIndex].GetComponent<RectTransform>().anchoredPosition = val;
-                    });
-                */
-                deck.UpdateTotalCards();
-
-                if (handIndex == 0)
+                if (i == 0)
                 {
-                    //newX = sign * 150;
                     newY = 300f;
-                    //newRotateZ = sign * 22.5f;
                 }
-                else if (handIndex == 1)
+                else if (i == 1)
                 {
-                    //newX = sign * 250;
                     newY = 150f;
-                    //newRotateZ = sign * 11.25f;
                 }
-                else if (handIndex == 2)
+                else if (i == 2)
                 {
-                    //newX = sign * 100;
                     newY = 0;
-                    //newRotateZ = 0;
                 }
-                else if (handIndex == 3)
+                else if (i == 3)
                 {
-                    //newX = sign * 250;
                     newY = -150f;
-                    //newRotateZ = sign * -11.25f;
                 }
-                else if (handIndex == 4)
+                else if (i == 4)
                 {
-                    //newX = sign * 150;
                     newY = -300f;
-                    //newRotateZ = sign * -22.5f;
                 }
 
-                LeanTween.value(hand[handIndex].gameObject, hand[handIndex].transform.localPosition, new Vector3(newX, newY, 0), 0.15f)
+                LeanTween.value(hand[i].gameObject, hand[i].transform.localPosition, new Vector3(newX, newY, 0), 0.15f)
                     .setEase(LeanTweenType.easeInQuad)
                     .setOnUpdateVector3((Vector3 val) =>
                     {
-                        hand[handIndex].GetComponent<RectTransform>().anchoredPosition = val;
+                        hand[i].GetComponent<RectTransform>().anchoredPosition = val;
                     });
-                /*LeanTween.value(hand[handIndex].gameObject, Vector3.zero, new Vector3(0, 0, newRotateZ), 0.075f)
-                    .setOnUpdateVector3((Vector3 val) =>
-                    {
-                        hand[handIndex].transform.localEulerAngles = val;
-                    });
-                    */
                 yield return new WaitForSeconds(0.15f);
-                handIndex++;
             }
+
+            PhotonNetwork.room.SetDeckInteract(null);
+            PhotonNetwork.room.SetInitialPlayerStatus(PhotonNetwork.player);
         }
-        else
+        else // remote
         {
-            Debug.Log(playerName + " hand is full.");
+            Debug.Log(PhotonNetwork.otherPlayers[0].NickName + " drawing " + cardsToDraw + " cards.");
+            for (int i = 0; i < cardsToDraw; i++)
+            {
+                if (hand.Count < 5)
+                {
+                    hand.Add(deck.cardList[0]);
+                }
+                else
+                {
+                    for (int j = 0; j < hand.Count; j++)
+                    {
+                        if (hand[j] == null)
+                        {
+                            i = j;
+                            hand[j] = deck.cardList[0];
+                            break;
+                        }
+                    }
+                }
+
+                hand[i].transform.SetParent(handParent.transform);
+                hand[i].SetOwner(transform);
+                hand[i].transform.SetSiblingIndex(i);
+
+                deck.cardList.RemoveAt(0);
+            }
         }
     }
 
-    bool IsHandFull()
+    bool CheckHand()
     {
-        if (hand.Count >= 5)
+        if (hand != null)
         {
-            for (int i = 0; i < hand.Count; i++)
+            if (hand.Count >= 5)
             {
-                if (hand[i] == null)
+                for (int i = 0; i < hand.Count; i++)
                 {
-                    return false;
+                    if (hand[i] == null)
+                    {
+                        return false;
+                    }
                 }
+                return true;
             }
-            return true;
+            else
+            {
+                return false;
+            }
         }
         else
         {
@@ -266,29 +207,65 @@ public class Player : MonoBehaviour {
 
     public void SelectCard(Card card)
     {
-        if (selectedCard == null)
+        if (gameManager.turnManager.CurrentPlayer == PhotonNetwork.player.NickName)
         {
-            card.board.AddCoverListener(this);
-            selectedCard = card;
-            card.Select();
-        }
-        else if (card != selectedCard)
-        {
-            selectedCard.UndoSelect();
-            selectedCard = card;
-            selectedCard.Select();
-        }
-        else if (card == selectedCard)
-        {
-            selectedCard.UndoSelect();
-            selectedCard = null;
+            if (selectedCard == null)
+            {
+                card.board.AddCoverListener(this);
+                selectedCard = card;
+                card.Select();
+            }
+            else if (card != selectedCard)
+            {
+                UndoSelectMove();
+                selectedCard = card;
+                selectedCard.Select();
+            }
+            else if (card == selectedCard)
+            {
+                UndoSelectMove();
+            }
         }
     }
 
-    public void UndoSelectCard()
+    public void PlaceCard(Cell cell)
     {
-        selectedCard.UndoSelect();
-        selectedCard.board.RemoveCoverListener();
+        if (gameManager.turnManager.CurrentPlayer != PhotonNetwork.player.NickName)
+        {
+            return;
+        }
+
+        if (selectedCard != null)
+        {
+            if (cell.IsValid())
+            {
+                for(int i = 0; i < hand.Count; i++)
+                {
+                    if (hand[i] == selectedCard)
+                    {
+                        hand[i] = null;
+                        break;
+                    }
+                }
+
+                selectedCard.transform.SetParent(cell.transform);
+                selectedCard.Place(Vector2.zero);
+                selectedCard = null;
+            }
+            else
+            {
+                Debug.Log("Invalid move.");
+            }
+        }
+        else
+        {
+            Debug.Log("Select a card first.");
+        }
+    }
+
+    public void UndoSelectMove()
+    {
+        selectedCard.UndoPlayerSelect();
         selectedCard = null;
     }
 }

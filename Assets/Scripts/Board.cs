@@ -9,7 +9,7 @@ public class Board : MonoBehaviour {
     // Prefab object to instantiate
     public GameObject cellPrefab;
     // Reference to all cell objects on the board
-    public List<Transform> cells;
+    public Cell[,] cells = new Cell[8, 8];  // FIX: Should depend on width/height vars
     // Reference to all Cards on the board
     public List<Card> cardList;
     //
@@ -27,12 +27,18 @@ public class Board : MonoBehaviour {
     // Distance between each cell
     public float distance;
     // References to width and height of board
-    public int width;
-    public int height;
+    public static int width;
+    public static int height;
 
-    private Image cover;
-    private EventTrigger trigger;
-    private EventTrigger.Entry entry;
+    private Image cover
+    {
+        get
+        {
+            return GameObject.Find("Board Cover").GetComponent<Image>();
+        }
+    }
+    //private EventTrigger trigger;
+    //private EventTrigger.Entry entry;
 
     // On awake, set the size of the board
     void Awake()
@@ -65,8 +71,6 @@ public class Board : MonoBehaviour {
                 break;
         };
 
-        GameObject coverGO = GameObject.Find("Board Cover");
-        cover = coverGO.GetComponent<Image>();
         HideCover();
     }
 
@@ -80,8 +84,7 @@ public class Board : MonoBehaviour {
             for (int j = 0; j < height; j++)
             {
                 GameObject cell = Instantiate(cellPrefab, Vector3.zero, Quaternion.identity, transform) as GameObject;
-                cells.Add(cell.transform);
-                cell.GetComponent<Cell>().gameManager = FindObjectOfType<GameManager>();
+                cells[i,j] = cell.GetComponent<Cell>();
                 cell.name = i + "," + j;
 
                 // Offset cell so it's centered with Camera
@@ -100,16 +103,18 @@ public class Board : MonoBehaviour {
     /// </summary>
     public void ShowValidCells()
     {
-        foreach(Transform cell in cells)
+        for (int i = 0; i < cells.GetLength(0); i++)
         {
-            if (IsInitialTurn())
+            for (int j = 0; j < cells.GetLength(1); j++)
             {
-                // Fix: Not hardcoded?
-                if (cell.name == "3,3" || cell.name == "3,4" || cell.name == "4,3" || cell.name == "4,4")
+                if (IsInitialTurn())
                 {
-                    if (!ContainsCard(cell))
+                    if (cells[i,j].name == "3,3" || cells[i,j].name == "3,4" || cells[i,j].name == "4,3" || cells[i,j].name == "4,4")
                     {
-                        cell.GetComponent<Image>().color = Color.green;
+                        if (!ContainsCard(cells[i,j].transform))
+                        {
+                            cells[i,j].GetComponent<Image>().color = Color.green;
+                        }
                     }
                 }
             }
@@ -117,16 +122,12 @@ public class Board : MonoBehaviour {
     }
 
     /// <summary>
-    /// Determines if the game is in its Initial Turn
+    /// Determines if the game is in its initial turn
     /// </summary>
-    /// <returns><c>true</c> if turnCount == 0, else <c>false</c>.</returns>
+    /// <returns><c>true</c> if turnCount == 1, else <c>false</c>.</returns>
     bool IsInitialTurn()
     {
-        if(gameManager.turnCount == 0)
-        {
-            return true;
-        }
-        return false;
+        return gameManager.turnManager.Turn <= 4;
     }
 
     /// <summary>
@@ -145,11 +146,14 @@ public class Board : MonoBehaviour {
 
     public void HideValidCells()
     {
-        foreach(Transform cell in cells)
+        for (int i = 0; i < cells.GetLength(0); i++)
         {
-            if (cell.gameObject.activeSelf)
+            for (int j = 0; j < cells.GetLength(1); j++)
             {
-                cell.GetComponent<Image>().color = Color.white;
+                if (cells[i,j].gameObject.activeSelf)
+                {
+                    cells[i,j].GetComponent<Image>().color = Color.white;
+                }
             }
         }
     }
@@ -168,16 +172,16 @@ public class Board : MonoBehaviour {
 
     public void AddCoverListener(Player player)
     {
-        trigger = cover.GetComponent<EventTrigger>();
+        /*trigger = cover.GetComponent<EventTrigger>();
         entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.PointerDown;
         entry.callback.AddListener( (data) => { player.UndoSelectCard(); });
-        trigger.triggers.Add(entry);
+        trigger.triggers.Add(entry);*/
     }
 
     public void RemoveCoverListener()
     {
-        entry.callback.RemoveAllListeners();
-        trigger.triggers.Remove(entry);
+        //entry.callback.RemoveAllListeners();
+        //trigger.triggers.Remove(entry);
     }
 }

@@ -1,69 +1,119 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
-public class GameManager : MonoBehaviour {
+public class GameManager : Photon.MonoBehaviour {
 
+    // Reference to TurnManager class
+    public TurnManager turnManager
+    {
+        get
+        {
+            return GetComponent<TurnManager>();
+        }
+    }
     // Reference to Board class
-    public Board board;
+    public Board board
+    {
+        get
+        {
+            return FindObjectOfType<Board>();
+        }   
+    }
     // Reference to Deck class
-    public Deck deck;
-    // Reference to both players in the game
-    public List<Player> players;
+    public Deck deck
+    {
+        get
+        {
+            return FindObjectOfType<Deck>();
+        }
+    }
+    // Reference to players in the game
+    public GameObject playerPrefab;
+    public RectTransform playerParent;
+    public List<Player> playerList;
     // Reference to Canvas
-    public Canvas canvas;
-    //
-    public int turnCount;
+    public Canvas canvas
+    {
+        get
+        {
+            return FindObjectOfType<Canvas>();
+        }
+    }
+
     // Reference to Card controls
     private Button rotateButton;
     private Button placeButton;
 
     void Start()
     {
-        StartCoroutine(Initialize());
-    }
+        PhotonNetwork.Instantiate("Player", Vector3.zero, Quaternion.identity, 0);
 
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (PhotonNetwork.isMasterClient)
         {
-            StartCoroutine(players[1].Draw(1));
+            LeanTween.delayedCall(5f, () =>
+            {
+                photonView.RPC("Initialize", PhotonTargets.AllViaServer, null);
+            });
         }
     }
 
+    [PunRPC]
     IEnumerator Initialize()
     {
-        StartCoroutine(board.Create());
-        yield return StartCoroutine(deck.Create());
-        StartCoroutine(GetPlayers());
+        Debug.Log("Setting up game...");
+        yield return board.Create();
         SpawnCardControls();
-    }
 
-    /// <summary>
-    /// Store reference of both players.
-    /// Start initialization of each player.
-    /// </summary>
-    IEnumerator GetPlayers()
-    {
-        players.AddRange(FindObjectsOfType<Player>());
+        GameObject playerGO = PhotonNetwork.player.TagObject as GameObject;
+        playerGO.name = PhotonNetwork.player.NickName;
+        playerList.Add(playerGO.GetComponent<Player>());
 
-        // FIX: Player data should be loaded during sign-in
-        for (int i = players.Count - 1; i >= 0; i--)
+        GameObject otherPlayerGO = GameObject.Find("Player(Clone)");
+        if (otherPlayerGO == null)
         {
-            players[i].deck = deck;
-            players[i].gameManager = this;
-            yield return StartCoroutine(players[i].Initialize());
-            yield return StartCoroutine(players[i].Draw(5));
-            //StartCoroutine(player.GetPlayerData("http://byroncustodio.com/unity/card-game/card.php?request=PLAYER&id=" + player.id));
+            Debug.LogError("Could not find opponent object.");
+            Debug.Break();
+        }
+        otherPlayerGO.name = PhotonNetwork.otherPlayers[0].CustomProperties["Name"].ToString();
+        playerList.Add(otherPlayerGO.GetComponent<Player>());
+
+        foreach(Player player in playerList)
+        {
+            player.transform.SetParent(playerParent);
+            player.Initialize();
+        }
+
+        if (PhotonNetwork.isMasterClient)
+        {
+            Deck.AssignCardValues();
         }
     }
 
-    public IEnumerator UpdateTurnCount()
+    [PunRPC]
+    public IEnumerator DealInitialCards()
     {
-        turnCount++;
-        yield return null;
+        if (!playerList[0].isHandFull)
+        {
+            playerList[0].photonView.RPC("Draw", PhotonTargets.AllViaServer, 5);
+        }
+        yield return new WaitUntil(() => deck.PlayerInteracting == "");
+        if (!playerList[1].isHandFull)
+        {
+            playerList[1].photonView.RPC("Draw", PhotonTargets.AllViaServer, 5);  
+        }
+        yield return new WaitUntil(() => deck.IsAllPlayersReady == true);
+        //  FIX: Add additional wait time to improve game start
+        BeginGame();
+    }
+
+    void BeginGame()
+    {
+        Debug.Log("Starting game...");
+        PhotonNetwork.room.BeginInitialTurn();
     }
 
     void SpawnCardControls()
@@ -105,41 +155,7 @@ public class GameManager : MonoBehaviour {
     {
         if (button.name.Equals("Rotate Button"))
         {
-            players[0].selectedCard.Rotate(true);
-        }
-    }
-
-    public void MoveSelectedCardToBoard(Transform cell)
-    {
-        if (cell.GetComponent<Image>().color == Color.green)
-        {
-            // Add case: If cell already has card
-            if (players[0].selectedCard != null)
-            {
-                Debug.Log("Placing card.");
-
-                Card selectedCard = players[0].selectedCard;
-                players[0].selectedCard = null;
-                for(int i = 0; i < players[0].hand.Count; i++)
-                {
-                    if (players[0].hand[i] == selectedCard)
-                    {
-                        players[0].hand[i] = null;
-                        break;
-                    }
-                }
-
-                selectedCard.transform.SetParent(cell);
-                selectedCard.Place(Vector2.zero);
-            }
-            else
-            {
-                Debug.Log("Select a card first.");
-            }
-        }
-        else if (cell.GetComponent<Image>().color == Color.white)
-        {
-            Debug.Log("Invalid place. Choose a valid place.");
+            playerList[0].selectedCard.Rotate(true);
         }
     }
 }
