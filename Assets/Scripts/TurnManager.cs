@@ -1,15 +1,15 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
+using TMPro;
 using System.Collections;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
 
 public class TurnManager : Photon.MonoBehaviour {
 
-    public Text turnCountUI;
-    public Text turnTimerUI;
-    public Text turnPlayerUI;
+    public TextMeshProUGUI turnCountUI;
+    public TextMeshProUGUI turnTimerUI;
+    public TextMeshProUGUI turnPlayerUI;
 
-    public float turnDuration = 30f;
+    private float turnDuration = 45f;
 
     public int Turn
     {
@@ -57,7 +57,7 @@ public class TurnManager : Photon.MonoBehaviour {
     {
         if (Turn > 0 && this.TimeEnd && !isTimeEnded)
         {
-            Debug.Log("Timer ended.");
+            //Debug.Log("Timer ended.");
             isTimeEnded = true;
             turnTimerUI.text = "Time: 0s";
             if (PhotonNetwork.isMasterClient)
@@ -267,6 +267,6 @@ public static class TurnExtensions {
         Hashtable roomProps = new Hashtable();
         roomProps.Add(TurnEndMoveKey, true);
         room.SetCustomProperties(roomProps);
-        Debug.Log("Turn ended.");
+        //Debug.Log("Turn ended.");
     }
 }

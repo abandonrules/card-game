@@ -2,6 +2,16 @@
 A multiplayer strategy game inspired by Final Fantasy's Triple Triad mini-game and the classic board game, Reversi.
 
 ## Development Log
+**April 29th, 2017**  
+
+- *Programming*
+    - +Added game logic, replicating rules similar to Reversi
+    - +Added feature to select a player's color displayed in-game
+    - +Added ping to monitor player latency
+    - +Improved message status in Menu scene
+    - +Improved text UI and rendering quality
+    - +Changed color scheme of game (temporary)
+
 **April 12th, 2017**  
 ![](https://thumbs.gfycat.com/FancyGrimBarasinga-size_restricted.gif)
 

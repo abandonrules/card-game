@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using System.Collections;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
 
@@ -11,50 +12,115 @@ public class NetworkManager : Photon.MonoBehaviour {
 
 	public Button join;
     public Player player;
-    public Text networkMessageUI;
+    public TextMeshProUGUI networkMessageUI;
 
-    void Awake()
+    /// <summary>
+    /// Handles any messages regarding Photon networking.
+    /// </summary>
+    /// <param name="newMessage">The newest message being passed.</param>
+    private void SetNetworkMessage(string newMessage)
     {
-        // Only connect when needed
-        //PhotonNetwork.ConnectUsingSettings(GameVersion);
+        if (networkMessageUI.text == "")
+        {
+            networkMessageUI.text = newMessage;
+            return;
+        }
+
+        if (LeanTween.isTweening(networkMessageUI.rectTransform))
+        {
+            LeanTween.cancel(networkMessageUI.rectTransform);
+        }
+
+        string currentMessage = networkMessageUI.text;
+
+        // Remove current message rich text
+        if (currentMessage.Contains("</color>"))
+        {
+            // Removes <color=#ffffff>
+            int firstIndex = currentMessage.IndexOf("<");
+            int lastIndex = currentMessage.IndexOf(">");
+            currentMessage = currentMessage.Substring(0, firstIndex) + currentMessage.Substring(lastIndex + 1, currentMessage.Length - lastIndex - 1);
+
+            // Removes </color>
+            firstIndex = currentMessage.IndexOf("<");
+            currentMessage = currentMessage.Substring(0, firstIndex);
+        }
+        networkMessageUI.text = currentMessage + "\n" + newMessage;
+
+        while(networkMessageUI.preferredHeight > networkMessageUI.rectTransform.sizeDelta.y)
+        {
+            int firstMessageIndex = networkMessageUI.text.IndexOf("\n");
+            networkMessageUI.text = networkMessageUI.text.Substring(firstMessageIndex + 1);
+        }
+
+        int lastMessageIndex = networkMessageUI.text.LastIndexOf("\n");
+        string lastMessage = networkMessageUI.text.Substring(lastMessageIndex + 1);
+
+        string red = Mathf.RoundToInt(networkMessageUI.color.r * 255).ToString("X");
+        string green = Mathf.RoundToInt(networkMessageUI.color.g * 255).ToString("X");
+        string blue = Mathf.RoundToInt(networkMessageUI.color.b * 255).ToString("X");
+
+        string cutMessage = networkMessageUI.text.Substring(0, networkMessageUI.text.Length - lastMessage.Length);
+
+        LeanTween.value(networkMessageUI.gameObject, 25f, 255f, 1f)
+            .setEase(LeanTweenType.easeInQuad)
+            .setOnUpdate((float val) =>
+            {
+                string alpha = Mathf.RoundToInt(val).ToString("X");
+
+                string hex = "#" + red + green + blue + alpha;
+                string modifiedLastMessage = "<color=" + hex.ToLower() + ">" + lastMessage + "</color>";
+                networkMessageUI.text = cutMessage + modifiedLastMessage;
+            })
+            .setLoopPingPong(-1);
+
+        return;
     }
 
+    /// <summary>
+    /// Raises the join event when attempting to connect with Photon.
+    /// </summary>
+    /// <param name="name">Name of the player joining.</param>
     public void OnClickJoin(InputField name)
     {
-        if (join.GetComponentInChildren<Text>().text.Equals("JOIN"))
+        if (join.GetComponentInChildren<TextMeshProUGUI>().text.Equals("JOIN"))
         {
             clientPlayerName = name.text;
 
             name.interactable = false;
-            join.GetComponentInChildren<Text>().text = "CANCEL";
-            networkMessageUI.text = "Connecting to server...";
+            join.GetComponentInChildren<TextMeshProUGUI>().text = "CANCEL";
+
+            SetNetworkMessage("Connecting to server...");
             ConnectToServer();
         }
         else
         {
-            //name.interactable = true;
-            //join.GetComponentInChildren<Text>().text = "JOIN";
-            //networkMessageUI.text = "";
-
             DisconnectFromServer();
         }
     }
 
+    /// <summary>
+    /// Connects to server.
+    /// </summary>
     public static void ConnectToServer()
     {
         PhotonNetwork.ConnectUsingSettings(GameVersion);
     }
 
+    /// <summary>
+    /// Disconnects from server.
+    /// </summary>
     public static void DisconnectFromServer()
     {
         GameObject nameField = GameObject.Find("Name Input");
         nameField.GetComponent<InputField>().interactable = true;
 
         GameObject joinButton = GameObject.Find("Join Button");
-        joinButton.GetComponentInChildren<Text>().text = "JOIN";
+        joinButton.GetComponentInChildren<TextMeshProUGUI>().text = "JOIN";
 
         GameObject networkText = GameObject.Find("Network Status");
-        networkText.GetComponent<Text>().text = "";
+        LeanTween.cancel(networkText);
+        networkText.GetComponent<TextMeshProUGUI>().text = "";
 
         PhotonNetwork.Disconnect();
     }
@@ -62,7 +128,7 @@ public class NetworkManager : Photon.MonoBehaviour {
     void OnConnectedToMaster()
     {
         PhotonNetwork.JoinRandomRoom();
-        networkMessageUI.text = "Connection established.";
+        SetNetworkMessage("Connection established.");
     }
 
     void OnJoinedRoom()
@@ -73,12 +139,16 @@ public class NetworkManager : Photon.MonoBehaviour {
         playerGO.name = clientPlayerName;
         player = playerGO.GetComponent<Player>();
 
-        Debug.Log("Joined room. Searching for an opponent.");
+        //Debug.Log("Joined room. Searching for an opponent.");
 
         Hashtable playerProps = new Hashtable();
         playerProps.Add("Name", clientPlayerName);
         playerProps.Add("Rank", 1);
         playerProps.Add("Level", Random.Range(1, 10));
+
+        Color playerColor = GetComponent<MenuManager>().colorPanel.selectedColor;
+        string serializedColor = playerColor.r + "," + playerColor.g + "," + playerColor.b;
+        playerProps.Add("Color", serializedColor);
         PhotonNetwork.SetPlayerCustomProperties(playerProps);
         PhotonNetwork.playerName = clientPlayerName;
     }
@@ -86,10 +156,10 @@ public class NetworkManager : Photon.MonoBehaviour {
     [PunRPC]
     public void StartGame()
     {
-        networkMessageUI.text = "Found opponent. Starting game in...";
+        SetNetworkMessage("Found opponent. Starting game in...");
 
-        int i = 3;
-        Debug.Log(i);
+        int i = 5;
+        SetNetworkMessage(i.ToString());
         LeanTween.delayedCall(1f, () =>
         {
             i--;
@@ -97,16 +167,19 @@ public class NetworkManager : Photon.MonoBehaviour {
             {
                 PhotonNetwork.LoadLevel("Test_Gameplay");
             }
-            Debug.Log(i);
+            else
+            {
+                SetNetworkMessage(i.ToString());
+            }
         })
-        .setRepeat(3);
+        .setRepeat(5);
     }
 
     [PunRPC]
     public void ResetSearch()
     {
         Debug.Log("Opponent disconnected.");
-        networkMessageUI.text = "Searching for an opponent...";
+        SetNetworkMessage("<color=red>Error: Failed to start match.</color>\nSearching for an opponent...");
     }
 
     void OnPhotonJoinRoomFailed()
@@ -116,8 +189,7 @@ public class NetworkManager : Photon.MonoBehaviour {
 
     void OnPhotonRandomJoinFailed(object[] codeAndMsg)
     {
-        networkMessageUI.text = "Searching for an opponent...";
-
+        SetNetworkMessage("Searching for an opponent...");
         RoomOptions roomOptions = new RoomOptions();
         roomOptions.IsVisible = true;
         roomOptions.IsOpen = true;

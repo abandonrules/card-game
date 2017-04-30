@@ -1,10 +1,19 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro;
 using System.Collections;
 using System.Collections.Generic;
 
 public class Player : Photon.MonoBehaviour {
+
+    public Color playerColor
+    {
+        get
+        {
+            return GetPlayerColor();
+        }
+    }
 
     public Deck deck
     {
@@ -33,9 +42,18 @@ public class Player : Photon.MonoBehaviour {
         }
     }
 
+    private bool canPlaceRandomCard;
+
     void OnPhotonInstantiate(PhotonMessageInfo info)
     {
         info.sender.TagObject = this.gameObject;
+    }
+
+    public Color GetPlayerColor()
+    {
+        string[] colorVals = photonView.owner.CustomProperties["Color"].ToString().Split(","[0]);
+        Color playerColor = new Color(float.Parse(colorVals[0]), float.Parse(colorVals[1]), float.Parse(colorVals[2]));
+        return playerColor;
     }
 
     public void Initialize()
@@ -55,9 +73,46 @@ public class Player : Photon.MonoBehaviour {
     {
         if (SceneManager.GetActiveScene().name == "Test_Gameplay")
         {
-            if (gameManager.turnManager.TimeEnd && photonView.isMine && gameManager.turnManager.CurrentPlayer == PhotonNetwork.player.NickName && selectedCard != null)
+            if (!canPlaceRandomCard && gameManager.turnManager.TimeEnd && photonView.isMine && gameManager.turnManager.CurrentPlayer == PhotonNetwork.player.NickName)
             {
-                UndoSelectMove();
+                canPlaceRandomCard = true;
+
+                List<Cell> initialCells = new List<Cell>()
+                {
+                    gameManager.board.cells[3,3],
+                    gameManager.board.cells[3,4],
+                    gameManager.board.cells[4,3],
+                    gameManager.board.cells[4,4]
+                };
+
+                if (selectedCard != null)
+                {
+                    // Place selected card
+                    for (int i = 0; i < initialCells.Count; i++)
+                    {
+                        if (!initialCells[i].GetComponentInChildren<Card>())
+                        {
+                            PlaceCard(initialCells[i]);
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    // Place random card
+                    for (int i = 0; i < initialCells.Count; i++)
+                    {
+                        if (!initialCells[i].GetComponentInChildren<Card>())
+                        {
+                            PlaceRandom(initialCells[i]);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (canPlaceRandomCard && !gameManager.turnManager.TimeEnd && photonView.isMine && gameManager.turnManager.CurrentPlayer == PhotonNetwork.player.NickName)
+            {
+                canPlaceRandomCard = false;
             }
         }
     }
@@ -108,8 +163,8 @@ public class Player : Photon.MonoBehaviour {
                                                     (deck.transform.localPosition.y * 2) - (deck.GetComponent<RectTransform>().sizeDelta.y / 2));
 
                 hand[i].transform.localPosition = centeredPos;
-                hand[i].transform.localScale = new Vector2(1, 1);
-                hand[i].GetComponent<Image>().color = Color.white;
+                hand[i].transform.localScale = Vector2.one;
+                hand[i].GetComponent<Image>().color = playerColor;
                 hand[i].ShowAttackUI();
 
                 deck.cardList.RemoveAt(0);
@@ -211,23 +266,27 @@ public class Player : Photon.MonoBehaviour {
         {
             if (selectedCard == null)
             {
-                card.board.AddCoverListener(this);
+                //card.board.AddCoverListener(this);
                 selectedCard = card;
                 card.Select();
+                return;
             }
             else if (card != selectedCard)
             {
                 UndoSelectMove();
                 selectedCard = card;
                 selectedCard.Select();
+                return;
             }
             else if (card == selectedCard)
             {
                 UndoSelectMove();
+                return;
             }
         }
     }
 
+    // FIX: Add additional case where player can only place card adjacent to opponent card
     public void PlaceCard(Cell cell)
     {
         if (gameManager.turnManager.CurrentPlayer != PhotonNetwork.player.NickName)
@@ -248,9 +307,10 @@ public class Player : Photon.MonoBehaviour {
                     }
                 }
 
-                selectedCard.transform.SetParent(cell.transform);
-                selectedCard.Place(Vector2.zero);
+                string selectedCardAttack = selectedCard.attack["Top"] + "," + selectedCard.attack["Right"] + "," + selectedCard.attack["Bottom"] + "," + selectedCard.attack["Left"];
+                gameManager.photonView.RPC("MoveCardToBoard", PhotonTargets.AllViaServer, selectedCard.name, selectedCardAttack, cell.name);
                 selectedCard = null;
+                gameManager.HideCardControls();
             }
             else
             {
@@ -261,6 +321,44 @@ public class Player : Photon.MonoBehaviour {
         {
             Debug.Log("Select a card first.");
         }
+    }
+
+    private void PlaceRandom(Cell cell)
+    {
+        if (gameManager.turnManager.CurrentPlayer != PhotonNetwork.player.NickName)
+        {
+            return;
+        }
+
+        int randomCard = Random.Range(0, hand.Count);
+        selectedCard = hand[randomCard];
+        hand[randomCard] = null;
+
+        string[] selectedCardAttackList = new string[4];
+
+        foreach(TextMeshProUGUI attack in selectedCard.attackUI)
+        {
+            if (attack.name == "Top")
+            {
+                selectedCardAttackList[0] = attack.text;
+            }
+            else if (attack.name == "Right")
+            {
+                selectedCardAttackList[1] = attack.text;
+            }
+            else if (attack.name == "Bottom")
+            {
+                selectedCardAttackList[2] = attack.text;
+            }
+            else if (attack.name == "Left")
+            {
+                selectedCardAttackList[3] = attack.text;
+            }
+        }
+
+        string selectedCardAttack = selectedCardAttackList[0] + "," + selectedCardAttackList[1] + "," + selectedCardAttackList[2] + "," + selectedCardAttackList[3];
+        gameManager.photonView.RPC("MoveCardToBoard", PhotonTargets.AllViaServer, selectedCard.name, selectedCardAttack, cell.name);
+        selectedCard = null;
     }
 
     public void UndoSelectMove()

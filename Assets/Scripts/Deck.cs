@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.UI;
+using TMPro;
 using System.Collections;
 using System.Collections.Generic;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
@@ -116,19 +116,23 @@ public class Deck : MonoBehaviour {
             card.name = i.ToString();
 
             string[] randAttack = attackList[i].Split(","[0]);
-            card.attack["top"] = int.Parse(randAttack[0]);
-            card.attack["right"] = int.Parse(randAttack[1]);
-            card.attack["bottom"] = int.Parse(randAttack[2]);
-            card.attack["left"] = int.Parse(randAttack[3]);
+            card.attack["Top"] = int.Parse(randAttack[0]);
+            card.attack["Right"] = int.Parse(randAttack[1]);
+            card.attack["Bottom"] = int.Parse(randAttack[2]);
+            card.attack["Left"] = int.Parse(randAttack[3]);
 
             cardList.Add(card);
 
             foreach(Transform child in card.transform)
             {
-                child.GetComponent<Text>().color = Color.clear;
-                card.attackUI.Add(child.GetComponent<Text>());
-                card.SetAttackUI(child, child.name);
+                child.GetComponent<TextMeshProUGUI>().color = Color.clear;
+                child.GetComponent<TextMeshProUGUI>().text = card.attack[child.name].ToString();
+                child.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+                card.attackUI.Add(child.GetComponent<TextMeshProUGUI>());
             }
+
+            // FIX: Change based on resolution
+            cardGO.transform.localPosition = new Vector2(1000, -500);
 
             card.board = FindObjectOfType<Board>();
             card.SetOwner(transform);
@@ -147,8 +151,8 @@ public class Deck : MonoBehaviour {
     {
         if (propertiesThatChanged.ContainsKey("DeckTotal"))
         {
-            GetComponent<Text>().text = "Deck: " + this.Total;
-            Debug.Log("Deck Count: " + this.Total);
+            GetComponent<TextMeshProUGUI>().text = "Deck: " + this.Total;
+            //Debug.Log("Deck Count: " + this.Total);
         }
 
         if (propertiesThatChanged.ContainsKey("DeckAttack"))
