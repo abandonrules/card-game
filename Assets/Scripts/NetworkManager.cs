@@ -91,7 +91,7 @@ public class NetworkManager : Photon.MonoBehaviour {
             join.GetComponentInChildren<TextMeshProUGUI>().text = "CANCEL";
 
             SetNetworkMessage("Connecting to server...");
-            ConnectToServer();
+            ConnectToPhoton();
         }
         else
         {
@@ -102,7 +102,7 @@ public class NetworkManager : Photon.MonoBehaviour {
     /// <summary>
     /// Connects to server.
     /// </summary>
-    public static void ConnectToServer()
+    public static void ConnectToPhoton()
     {
         PhotonNetwork.ConnectUsingSettings(GameVersion);
     }
