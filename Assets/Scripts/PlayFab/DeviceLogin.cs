@@ -15,10 +15,13 @@ public class DeviceLogin : MonoBehaviour {
         }
     }
 
+    #region Begin Login services
+
     public void LoginToPlayFab(string playerCustomId)
     {
         Debug.Log("Logging into PlayFab...");
         ShowConnectingLayer();
+        menuManager.infoPanels[3].action = "Login";
 
         GetPlayerCombinedInfoRequestParams playerInfoRequest = new GetPlayerCombinedInfoRequestParams();
         playerInfoRequest.GetUserData = true;
@@ -69,10 +72,16 @@ public class DeviceLogin : MonoBehaviour {
         Debug.LogError(error.GenerateErrorReport());
     }
 
+    #endregion
+
+    #region Begin Create services
+
     public void CreatePlayFabAccount(string playerCustomId, string playerName)
     {
         Debug.Log("Creating account...");
         ShowConnectingLayer();
+        menuManager.infoPanels[3].action = "Create";
+        menuManager.infoPanels[3].playerName = playerName;
 
         #if UNITY_EDITOR
 
@@ -122,20 +131,46 @@ public class DeviceLogin : MonoBehaviour {
 
     private void OnUpdateUserDataError(PlayFabError error)
     {
-        menuManager.ShowPanel(menuManager.infoPanels[3]);
+        TextMeshProUGUI errorMessage = menuManager.infoPanels[1].transform.Find("Error Text").GetComponent<TextMeshProUGUI>();
+        if (error.Error == PlayFabErrorCode.ServiceUnavailable)
+        {
+            menuManager.ShowPanel(menuManager.infoPanels[3]);
+            menuManager.serverCover.DisableAnimations();
+        }
+        else
+        {
+            HideConnectingLayer();
+            errorMessage.text = error.ErrorMessage;
+        }
         Debug.Log(error.GenerateErrorReport());
     }
 
     private void OnCreateError(PlayFabError error)
     {
-        menuManager.ShowPanel(menuManager.infoPanels[3]);
+        TextMeshProUGUI errorMessage = menuManager.infoPanels[1].transform.Find("Error Text").GetComponent<TextMeshProUGUI>();
+        if (error.Error == PlayFabErrorCode.ServiceUnavailable)
+        {
+            menuManager.ShowPanel(menuManager.infoPanels[3]);
+            menuManager.serverCover.DisableAnimations();
+        }
+        else
+        {
+            HideConnectingLayer();
+            errorMessage.text = error.ErrorMessage;
+        }
         Debug.LogError(error.GenerateErrorReport());
     }
+
+    #endregion
+
+    #region Begin Transfer services
 
     public void TransferPlayFabAccount(string playerCustomId)
     {
         Debug.Log("Attempting to transfer account...");
         ShowConnectingLayer();
+        menuManager.infoPanels[3].action = "Transfer";
+        menuManager.infoPanels[3].transferPasscode = playerCustomId;
 
         GetPlayerCombinedInfoRequestParams playerInfoRequest = new GetPlayerCombinedInfoRequestParams();
         playerInfoRequest.GetUserAccountInfo = true;
@@ -145,7 +180,7 @@ public class DeviceLogin : MonoBehaviour {
 
             LoginWithCustomIDRequest request = new LoginWithCustomIDRequest();
             request.CustomId = playerCustomId;
-            request.CreateAccount = true;
+            request.CreateAccount = false;
             request.InfoRequestParameters = playerInfoRequest;
 
             PlayFabClientAPI.LoginWithCustomID(request, OnTransferSuccess, OnTransferError);
@@ -156,7 +191,7 @@ public class DeviceLogin : MonoBehaviour {
             request.DeviceId = playerCustomId;
             request.OS = SystemInfo.operatingSystem;
             request.DeviceModel = SystemInfo.deviceModel;
-            request.CreateAccount = true;
+            request.CreateAccount = false;
             request.InfoRequestParameters = playerInfoRequest;
 
             PlayFabClientAPI.LoginWithIOSDeviceID(request, OnTransferSuccess, OnTransferError);
@@ -192,12 +227,6 @@ public class DeviceLogin : MonoBehaviour {
         #endif
     }
 
-    private void OnTransferError(PlayFabError error)
-    {
-        menuManager.ShowPanel(menuManager.infoPanels[3]);
-        Debug.LogError(error.GenerateErrorReport());
-    }
-
     private void OnCustomIdTransferLinkSuccess(LinkCustomIDResult result)
     {
         Debug.Log("New transfer passcode linked.");
@@ -214,11 +243,39 @@ public class DeviceLogin : MonoBehaviour {
         menuManager.ShowPanel(menuManager.infoPanels[5]);
     }
 
-    private void OnTransferLinkError(PlayFabError error)
+    private void OnTransferError(PlayFabError error)
     {
-        menuManager.ShowPanel(menuManager.infoPanels[3]);
+        TextMeshProUGUI errorMessage = menuManager.infoPanels[2].transform.Find("Error Text").GetComponent<TextMeshProUGUI>();
+        if (error.Error == PlayFabErrorCode.ServiceUnavailable)
+        {
+            menuManager.ShowPanel(menuManager.infoPanels[3]);
+            menuManager.serverCover.DisableAnimations();
+        }
+        else
+        {
+            HideConnectingLayer();
+            errorMessage.text = error.ErrorMessage;
+        }
         Debug.LogError(error.GenerateErrorReport());
     }
+
+    private void OnTransferLinkError(PlayFabError error)
+    {
+        TextMeshProUGUI errorMessage = menuManager.infoPanels[2].transform.Find("Error Text").GetComponent<TextMeshProUGUI>();
+        if (error.Error == PlayFabErrorCode.ServiceUnavailable)
+        {
+            menuManager.ShowPanel(menuManager.infoPanels[3]);
+            menuManager.serverCover.DisableAnimations();
+        }
+        else
+        {
+            HideConnectingLayer();
+            errorMessage.text = error.ErrorMessage;
+        }
+        Debug.LogError(error.GenerateErrorReport());
+    }
+
+    #endregion
 
     /*
     private void OnPhotonAuthenticationSuccess(GetPhotonAuthenticationTokenResult result)
@@ -243,13 +300,22 @@ public class DeviceLogin : MonoBehaviour {
 
     private void ShowConnectingLayer()
     {
+        LeanTween.pause(FindObjectOfType<Parallax>().foreground.gameObject);
+        LeanTween.pause(FindObjectOfType<Parallax>().background.gameObject);
+
+        if (menuManager.serverCover.gameObject.activeSelf)
+        {
+            menuManager.serverCover.EnableAnimations();
+            return;
+        }
         menuManager.serverCover.gameObject.SetActive(true);
-        LeanTween.pause(FindObjectOfType<Parallax>().gameObject);
     }
 
     private void HideConnectingLayer()
     {
+        LeanTween.resume(FindObjectOfType<Parallax>().foreground.gameObject);
+        LeanTween.resume(FindObjectOfType<Parallax>().background.gameObject);
+
         menuManager.serverCover.gameObject.SetActive(false);
-        LeanTween.resume(FindObjectOfType<Parallax>().gameObject);
     }
 }

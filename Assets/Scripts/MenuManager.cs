@@ -12,7 +12,7 @@ public class MenuManager : MonoBehaviour
     private string debugCustomId;
 
     [SerializeField]
-    private TextMeshProUGUI titleText;
+    private Image title;
     [SerializeField]
     private Button startButton;
 
@@ -50,11 +50,11 @@ public class MenuManager : MonoBehaviour
             .setEase(LeanTweenType.easeInOutBack)
             .setOnComplete(() =>
             {
-                LeanTween.value(titleText.gameObject, 3f, 1f, 0.5f)
-                    .setEase(LeanTweenType.easeInBack)
+                LeanTween.value(title.gameObject, 2f, 1f, 1.5f)
+                    .setEase(LeanTweenType.easeOutElastic)
                     .setOnUpdate((float val) =>
                     {
-                        titleText.transform.localScale = new Vector2(val, val);
+                        title.transform.localScale = new Vector2(val, val);
                     })
                     .setOnComplete(() =>
                     {
@@ -73,11 +73,11 @@ public class MenuManager : MonoBehaviour
                             });
                     });
 
-                LeanTween.value(0f, 1f, 0.5f)
+                LeanTween.value(0f, 1f, 0.2f)
                     .setEase(LeanTweenType.easeInOutQuad)
                     .setOnUpdate((float val) =>
                     {
-                        titleText.color = new Color(titleText.color.r, titleText.color.g, titleText.color.b, val);
+                        title.color = new Color(title.color.r, title.color.g, title.color.b, val);
                     });
             });
         
@@ -120,20 +120,12 @@ public class MenuManager : MonoBehaviour
 
     public void OnClickCreateAccount(TMP_InputField newPlayerName)
     {
-        /*
-        if (newPlayerName.text.Contains(""))
+        if (string.IsNullOrEmpty(newPlayerName.text))
         {
-            TextMeshProUGUI messageText = newPlayerName.transform.parent.GetComponentInChildren<TextMeshProUGUI>();
-
-            if (!messageText.text.Contains("<color=red>"))
-            {
-                string newMessage = messageText.text + "\n<color=red>*Make sure name is valid*</color>";
-                messageText.text = newMessage;
-            }
-
+            TextMeshProUGUI messageText = newPlayerName.transform.parent.Find("Error Text").GetComponent<TextMeshProUGUI>();
+            messageText.text = "Field is empty";
             return;
         }
-        */
 
         string newCustomId = PlayerPrefsManager.GetRandomCustomId();
         PlayerPrefsManager.SetPlayerCustomId(newCustomId);
@@ -142,6 +134,13 @@ public class MenuManager : MonoBehaviour
 
     public void OnClickTransferAccount(TMP_InputField customId)
     {
+        if (string.IsNullOrEmpty(customId.text))
+        {
+            TextMeshProUGUI messageText = customId.transform.parent.Find("Error Text").GetComponent<TextMeshProUGUI>();
+            messageText.text = "Field is empty";
+            return;
+        }
+
         deviceLogin.TransferPlayFabAccount(customId.text);
     }
 

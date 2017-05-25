@@ -1,6 +1,6 @@
 fileFormatVersion: 2
 guid: f396eda5b584546c4b42042950bf03ba
-timeCreated: 1494756118
+timeCreated: 1495321839
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
@@ -39,7 +39,7 @@ TextureImporter:
   cubemapConvolutionSteps: 7
   cubemapConvolutionExponent: 1.5
   seamlessCubemap: 0
-  textureFormat: -1
+  textureFormat: -3
   maxTextureSize: 1024
   textureSettings:
     filterMode: 2
@@ -71,7 +71,7 @@ TextureImporter:
         serializedVersion: 2
         x: 31
         y: 853
-        width: 506
+        width: 505
         height: 154
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -80,6 +80,19 @@ TextureImporter:
       tessellationDetail: 0
     - serializedVersion: 2
       name: sprite-sheet_1
+      rect:
+        serializedVersion: 2
+        x: 657
+        y: 895
+        width: 342
+        height: 112
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: sprite-sheet_2
       rect:
         serializedVersion: 2
         x: 34
@@ -92,7 +105,33 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: sprite-sheet_2
+      name: sprite-sheet_3
+      rect:
+        serializedVersion: 2
+        x: 657
+        y: 767
+        width: 342
+        height: 112
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: sprite-sheet_4
+      rect:
+        serializedVersion: 2
+        x: 657
+        y: 635
+        width: 342
+        height: 112
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: sprite-sheet_5
       rect:
         serializedVersion: 2
         x: 21
@@ -105,7 +144,20 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: sprite-sheet_3
+      name: sprite-sheet_6
+      rect:
+        serializedVersion: 2
+        x: 657
+        y: 504
+        width: 344
+        height: 112
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: sprite-sheet_7
       rect:
         serializedVersion: 2
         x: 18
@@ -118,20 +170,20 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: sprite-sheet_4
+      name: sprite-sheet_8
       rect:
         serializedVersion: 2
-        x: 530
-        y: 353
-        width: 228
-        height: 68
+        x: 657
+        y: 379
+        width: 342
+        height: 112
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: sprite-sheet_5
+      name: sprite-sheet_9
       rect:
         serializedVersion: 2
         x: 18
@@ -144,65 +196,26 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: sprite-sheet_6
-      rect:
-        serializedVersion: 2
-        x: 530
-        y: 267
-        width: 228
-        height: 68
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: sprite-sheet_7
-      rect:
-        serializedVersion: 2
-        x: 781
-        y: 267
-        width: 228
-        height: 68
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: sprite-sheet_8
-      rect:
-        serializedVersion: 2
-        x: 530
-        y: 184
-        width: 228
-        height: 68
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: sprite-sheet_9
-      rect:
-        serializedVersion: 2
-        x: 781
-        y: 184
-        width: 228
-        height: 68
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
       name: sprite-sheet_10
       rect:
         serializedVersion: 2
-        x: 10
-        y: 22
-        width: 1004
-        height: 142
+        x: 657
+        y: 252
+        width: 342
+        height: 112
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: sprite-sheet_11
+      rect:
+        serializedVersion: 2
+        x: 657
+        y: 125
+        width: 342
+        height: 112
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
